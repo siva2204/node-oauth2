@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const { JWK, JWT } = require("jose");
 const cryptoRandomString = require("crypto-random-string");
 const { URL } = require("url");
-const { clients, codes } = require("../env.js");
+const { clients, codes, users } = require("../env.js");
+const { privateJWK } = require("../Keys/key");
 
 //The authorisation endpoint(authorising client)
 router.get("/authorize", (req, res) => {
@@ -12,7 +14,7 @@ router.get("/authorize", (req, res) => {
     scope,
     state,
     redirect_uri,
-    nounce,
+    nonce,
   } = req.query;
   //searching client from database
   const client = clients.find((client) => client_id == client.client_id);
@@ -33,15 +35,29 @@ router.get("/authorize", (req, res) => {
 
 // resource owner authentication and sending code back to the client
 router.post("/approve", (req, res) => {
-  /* Authenticating resource owner here */
+  //authenticating resource owner
+  const [email, password] = [req.body.email, req.body.password];
+  if (!email && !password) {
+    res.status(400).json({ error: "email and password required" });
+    return;
+  }
+
+  const user = users.find((user) => email == user.email);
+
+  if (!user) {
+    res.status(401).json({ error: "email not registered" });
+    return;
+  }
+
+  if (password != user.password) {
+    res.status(401).json({ error: "incorrect password" });
+    return;
+  }
 
   let query = req.session.query;
   // deleting the session
   req.session.destroy((error) => {
-    if (error) {
-      throw new Error(error);
-    }
-    console.log("Session Destroyed");
+    if (error) throw new Error(error);
   });
 
   if (!query) {
@@ -52,7 +68,7 @@ router.post("/approve", (req, res) => {
   if (query.response_type == "code") {
     let code = cryptoRandomString({ length: 25, type: "url-safe" });
     // need to save code with query object in database
-    codes[code] = { request: query };
+    codes[code] = { request: query, user: user };
     const urlParsed = buildUrl(query.redirect_uri, {
       code: code,
       state: query.state,
@@ -80,7 +96,7 @@ router.post("/token", (req, res) => {
   const [clientId, clientSecret] = decodeClientCredential(auth);
   const client = clients.find((client) => clientId == client.client_id);
 
-  //client authentication
+  //client authorization
   if (!client && client.client_secret != clientSecret) {
     res.status(401).json({ error: "invalid client" });
     return;
@@ -94,11 +110,34 @@ router.post("/token", (req, res) => {
       delete codes[req.body.code];
 
       if (code.request.client_id == clientId) {
+        let scope = code.request.scope.split(" ");
         /* send back id_token */
-        let id_token, response;
-        id_token = cryptoRandomString({ length: 25, type: "url-safe" });
-        response = { id_token: id_token };
-        res.status(200).json(response);
+        if (arrayInclude(scope, "openid")) {
+          let payload = {
+            sub: code.user.id,
+            nonce: code.request.nounce,
+          };
+          //email scope
+          if (arrayInclude(scope, "email")) {
+            payload.email = code.user.email;
+            payload.email_verified = true;
+          }
+          //profile scope
+          if (arrayInclude(scope, "profile")) {
+            payload.name = code.user.name;
+          }
+          const id_token = JWT.sign(payload, JWK.asKey(privateJWK), {
+            audience: clientId,
+            issuer: "http://localhost:5000",
+            expiresIn: "10 m",
+            header: {
+              typ: "JWT",
+            },
+          });
+          res.status(200).json({ id_token });
+        } else {
+          res.status(400).json({ error: "invalid_scope" });
+        }
       } else {
         // clientId mismatch
         res.status(400).json({ error: "invalid grant" });
@@ -128,6 +167,11 @@ function decodeClientCredential(auth) {
   let bufferObj = Buffer.from(encodedString, "base64");
   let decodedString = bufferObj.toString("utf8").split(":");
   return decodedString;
+}
+
+//Array Include function
+function arrayInclude(array, item) {
+  return array.includes(item);
 }
 
 module.exports = router;
