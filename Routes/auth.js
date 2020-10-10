@@ -6,7 +6,7 @@ const { URL } = require("url");
 const { clients, codes, users } = require("../env.js");
 const { privateJWK } = require("../Keys/key");
 
-//The authorisation endpoint(authorising client)
+//The authorization endpoint(authorising client)
 router.get("/authorize", (req, res) => {
   const {
     client_id,

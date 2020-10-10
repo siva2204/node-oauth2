@@ -3,6 +3,7 @@ const app = express();
 const session = require("express-session");
 
 const authRoutes = require("./Routes/auth");
+const keyRoutes = require("./Routes/keyRoute");
 const { secret } = require("./env");
 
 const port = 5000;
@@ -21,12 +22,9 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => {
-  res.send("<h1 style ='text-align:center;'>openidconnect in action</h1>");
-});
-
 //Routes middleware
 app.use("/oauth2/oidc/", authRoutes);
+app.use("/oauth2/oidc/keys/", keyRoutes);
 
 app.listen(port, () => {
   console.log(`authorisation server listening on http://localhost:${port}`);
