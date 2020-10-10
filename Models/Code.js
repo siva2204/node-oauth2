@@ -24,6 +24,10 @@ const codeSchema = new mongoose.Schema({
   nonce: {
     type: String,
   },
+  date: {
+    type: Number,
+    default: Date.now(),
+  },
 });
 
 const Code = mongoose.model("Code", codeSchema);

@@ -3,7 +3,7 @@ const router = express.Router();
 const { JWK, JWT } = require("jose");
 const cryptoRandomString = require("crypto-random-string");
 const { URL } = require("url");
-const { clients, codes, users } = require("../env.js");
+const { clients, users } = require("../env.js");
 const { privateJWK } = require("../Keys/key");
 const Code = require("../Models/Code");
 
@@ -123,22 +123,24 @@ router.post("/token", async (req, res) => {
       // deleting the code from DB
       await code.remove();
 
-      if (code.request.client_id == clientId) {
-        let scope = code.request.scope.split(" ");
+      if (code.clientId == clientId) {
+        let scope = code.scope.split(" ");
+        const user = users.find((user) => user.id == code.userId);
         /* send back id_token */
         if (arrayInclude(scope, "openid")) {
           let payload = {
-            sub: code.user.id,
-            nonce: code.request.nounce,
+            sub: user.id,
+            nonce: user.nonce,
+            auth_time: code.date,
           };
           //email scope
           if (arrayInclude(scope, "email")) {
-            payload.email = code.user.email;
+            payload.email = user.email;
             payload.email_verified = true;
           }
           //profile scope
           if (arrayInclude(scope, "profile")) {
-            payload.name = code.user.name;
+            payload.name = user.name;
           }
           const id_token = JWT.sign(payload, JWK.asKey(privateJWK), {
             audience: clientId,
