@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { JWK, JWT } = require("jose");
-const cryptoRandomString = require("crypto-random-string");
+const { nanoid } = require("nanoid");
 const { URL } = require("url");
 const { clients, users } = require("../env.js");
 const { privateJWK } = require("../Keys/key");
@@ -67,9 +67,9 @@ router.post("/approve", async (req, res) => {
   }
 
   if (query.response_type == "code") {
-    let randomString = cryptoRandomString({ length: 25, type: "url-safe" });
+    let randomString = nanoid(30);
     // need to save code with query object in database
-    // codes[code] = { request: query, user: user };
+
     let code = new Code({
       code: randomString,
       userId: user.id,
