@@ -5,18 +5,20 @@ const clients = [
     redirect_uri: "http://localhost:5001/callback",
   },
 ];
-
-let codes = {};
+//DB server
+const server = "127.0.0.1:27017";
+//DB name
+const dbname = "oauth";
 
 const users = [
   {
-    id: 1,
+    id: "1",
     name: "1",
     email: "1@1.in",
     password: "1",
   },
   {
-    id: 2,
+    id: "2",
     name: "2",
     email: "2@2.in",
     password: "2",
@@ -29,6 +31,7 @@ const secret =
 module.exports = {
   clients,
   secret,
-  codes,
   users,
+  server,
+  dbname,
 };

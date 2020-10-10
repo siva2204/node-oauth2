@@ -1,12 +1,25 @@
 const express = require("express");
 const app = express();
 const session = require("express-session");
-
+const mongoose = require("mongoose");
 const authRoutes = require("./Routes/auth");
 const keyRoutes = require("./Routes/keyRoute");
-const { secret } = require("./env");
+const { secret, server, dbname } = require("./env");
 
 const port = 5000;
+
+//DB connection
+mongoose
+  .connect(`mongodb://${server}/${dbname}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Database connection successful");
+  })
+  .catch((err) => {
+    console.error("Database connection error" + err);
+  });
 
 //bodyParser middleware
 app.use(express.json());

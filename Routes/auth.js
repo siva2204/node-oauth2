@@ -5,6 +5,7 @@ const cryptoRandomString = require("crypto-random-string");
 const { URL } = require("url");
 const { clients, codes, users } = require("../env.js");
 const { privateJWK } = require("../Keys/key");
+const Code = require("../Models/Code");
 
 //The authorization endpoint(authorising client)
 router.get("/authorize", (req, res) => {
@@ -34,7 +35,7 @@ router.get("/authorize", (req, res) => {
 });
 
 // resource owner authentication and sending code back to the client
-router.post("/approve", (req, res) => {
+router.post("/approve", async (req, res) => {
   //authenticating resource owner
   const [email, password] = [req.body.email, req.body.password];
   if (!email && !password) {
@@ -66,11 +67,23 @@ router.post("/approve", (req, res) => {
   }
 
   if (query.response_type == "code") {
-    let code = cryptoRandomString({ length: 25, type: "url-safe" });
+    let randomString = cryptoRandomString({ length: 25, type: "url-safe" });
     // need to save code with query object in database
-    codes[code] = { request: query, user: user };
+    // codes[code] = { request: query, user: user };
+    let code = new Code({
+      code: randomString,
+      userId: user.id,
+      clientId: query.client_id,
+      scope: query.scope,
+      state: query.state,
+      redirectUri: query.redirect_uri,
+    });
+    if (query.nonce) {
+      code.nonce = query.nonce;
+    }
+    await code.save();
     const urlParsed = buildUrl(query.redirect_uri, {
-      code: code,
+      code: randomString,
       state: query.state,
     });
     res.redirect(urlParsed);
@@ -83,7 +96,7 @@ router.post("/approve", (req, res) => {
 });
 
 //token endpoint (returns id token)
-router.post("/token", (req, res) => {
+router.post("/token", async (req, res) => {
   //authorization headers
   const auth = req.headers["authorization"];
 
@@ -104,10 +117,11 @@ router.post("/token", (req, res) => {
 
   if (req.body.grant_type == "authorization_code") {
     // getting back the saved code from database
-    const code = codes[req.body.code];
+    // const code = codes[req.body.code];
+    const code = await Code.findOne({ code: req.body.code });
     if (code) {
       // deleting the code from DB
-      delete codes[req.body.code];
+      await code.remove();
 
       if (code.request.client_id == clientId) {
         let scope = code.request.scope.split(" ");
