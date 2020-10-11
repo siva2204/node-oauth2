@@ -1,0 +1,4 @@
+_id,clientId,clientSecret,redirectUri,__v
+5f835101499c8a85d0180f1f,oauth-client-1,oauth-client-secret-1,http://localhost:5001/callback,0
+5f835102499c8a85d0180f20,oauth-client-2,oauth-client-secret-2,http://localhost:5001/callback,0
+5f835102499c8a85d0180f21,oauth-client-3,oauth-client-secret-3,http://localhost:5001/callback,0
