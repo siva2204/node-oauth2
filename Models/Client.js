@@ -15,5 +15,5 @@ const clientSchema = mongoose.Schema({
   },
 });
 
-const Client = mongoose.model("ResourceOwner", resourceOwnerSchema);
-module.export = Client;
+const Client = mongoose.model("Client", clientSchema);
+module.exports = Client;

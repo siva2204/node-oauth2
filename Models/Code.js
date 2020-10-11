@@ -5,7 +5,8 @@ const codeSchema = new mongoose.Schema({
     required: true,
   },
   userId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ResourceOwner",
     required: true,
   },
   clientId: {

@@ -16,4 +16,4 @@ const resourceOwnerSchema = mongoose.Schema({
 });
 
 const ResourceOwner = mongoose.model("ResourceOwner", resourceOwnerSchema);
-module.export = ResourceOwner;
+module.exports = ResourceOwner;
