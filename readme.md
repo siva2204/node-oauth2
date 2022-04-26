@@ -1,5 +1,3 @@
-# webmailOauth
-
 ## oauth2 + oidc
 
 The OAuth 2.0 authorization framework enables a third-party application to obtain lim-
